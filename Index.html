@@ -11,6 +11,7 @@
             --text-color: #333333;
             --primary-color: #2da44e;
             --border-color: #d0d7de;
+            --danger-color: #cf222e;
         }
 
         body {
@@ -25,7 +26,7 @@
 
         .container {
             width: 100%;
-            max-width: 950px;
+            max-width: 1000px;
             background: var(--card-bg);
             padding: 24px;
             border-radius: 6px;
@@ -46,7 +47,6 @@
             margin-bottom: 20px;
         }
 
-        /* Summary Dashboard Cards */
         .summary-dashboard {
             display: flex;
             gap: 16px;
@@ -126,7 +126,6 @@
             min-width: 55px;
         }
 
-        /* Color Coding Themes */
         .perfect { background-color: #dafbe1; color: #1a7f37; }
         .partial { background-color: #fff8c5; color: #9a6700; }
         .zero { background-color: #ffebe9; color: #cf222e; }
@@ -149,6 +148,20 @@
         .btn:hover {
             background-color: #2c974b;
         }
+
+        .btn-delete {
+            background: none;
+            border: none;
+            color: var(--danger-color);
+            cursor: pointer;
+            font-size: 16px;
+            padding: 4px 8px;
+            border-radius: 4px;
+        }
+
+        .btn-delete:hover {
+            background-color: #ffebe9;
+        }
     </style>
 </head>
 <body>
@@ -157,19 +170,18 @@
     <h1>📅 Attendance Self-Tracker</h1>
     <p class="subtitle">Medical Leave (ML) is excluded from total score calculations.</p>
 
-    <!-- Global Statistics Summary View -->
     <div class="summary-dashboard">
         <div class="summary-card">
             <h3>Total Days</h3>
-            <div id="statDays" class="value">1</div>
+            <div id="statDays" class="value">0</div>
         </div>
         <div class="summary-card">
-            <h3>Attended</h3>
+            <h3>Sessions Attended</h3>
             <div id="statPresent" class="value" style="color: #1a7f37;">0</div>
         </div>
         <div class="summary-card">
             <h3>Grand Attendance</h3>
-            <div id="statGrandTotal" class="value" style="color: #cf222e;">0%</div>
+            <div id="statGrandTotal" class="value" style="color: var(--danger-color);">0%</div>
         </div>
     </div>
 
@@ -177,42 +189,15 @@
         <thead>
             <tr>
                 <th style="width: 18%;">Date</th>
-                <th style="width: 23%;">Session 1<span class="session-header">10:00 AM - 11:30 AM</span></th>
-                <th style="width: 23%;">Session 2<span class="session-header">11:45 AM - 01:00 PM</span></th>
-                <th style="width: 23%;">Session 3<span class="session-header">02:00 PM - 04:00 PM</span></th>
-                <th style="width: 13%;">Daily Score</th>
+                <th style="width: 22%;">Session 1<span class="session-header">10:00 AM - 11:30 AM</span></th>
+                <th style="width: 22%;">Session 2<span class="session-header">11:45 AM - 01:00 PM</span></th>
+                <th style="width: 22%;">Session 3<span class="session-header">02:00 PM - 04:00 PM</span></th>
+                <th style="width: 12%;">Daily Score</th>
+                <th style="width: 4%;"></th>
             </tr>
         </thead>
-        <tbody>
-            <!-- Initial Row -->
-            <tr>
-                <td><input type="date" value="2026-05-02"></td>
-                <td>
-                    <select class="session-status" onchange="updateCalculations(this)">
-                        <option value="Absent">Absent</option>
-                        <option value="Present">Present</option>
-                        <option value="Medical Leave">Medical Leave</option>
-                        <option value="Normal Leave">Normal Leave</option>
-                    </select>
-                </td>
-                <td>
-                    <select class="session-status" onchange="updateCalculations(this)">
-                        <option value="Absent">Absent</option>
-                        <option value="Present">Present</option>
-                        <option value="Medical Leave">Medical Leave</option>
-                        <option value="Normal Leave">Normal Leave</option>
-                    </select>
-                </td>
-                <td>
-                    <select class="session-status" onchange="updateCalculations(this)">
-                        <option value="Absent">Absent</option>
-                        <option value="Present">Present</option>
-                        <option value="Medical Leave">Medical Leave</option>
-                        <option value="Normal Leave">Normal Leave</option>
-                    </select>
-                </td>
-                <td><span class="percentage-badge zero">0%</span></td>
-            </tr>
+        <tbody id="tableBody">
+            <!-- Table content dynamically loaded/managed via Javascript -->
         </tbody>
     </table>
 
@@ -220,10 +205,12 @@
 </div>
 
 <script>
-    // Handles row calculation and updates summary board metrics together
+    document.addEventListener("DOMContentLoaded", loadDataFromStorage);
+
     function updateCalculations(element) {
         calculateRow(element.closest('tr'));
         calculateGrandTotals();
+        saveDataToStorage();
     }
 
     function calculateRow(row) {
@@ -251,9 +238,7 @@
         const percentage = Math.round((presentCount / totalActiveSessions) * 100);
         badge.textContent = percentage + '%';
 
-        if (percentage === 100) {
-            badge.classList.add('perfect');
-        } else if (percentage >= 75) {
+        if (percentage >= 75) {
             badge.classList.add('perfect');
         } else if (percentage > 0) {
             badge.classList.add('partial');
@@ -276,9 +261,7 @@
             }
         });
 
-        const totalRows = document.querySelectorAll('#attendanceTable tbody tr').length;
-        
-        // Update basic count badges
+        const totalRows = document.querySelectorAll('#tableBody tr').length;
         document.getElementById('statDays').textContent = totalRows;
         document.getElementById('statPresent').textContent = grandPresentCount;
 
@@ -293,19 +276,35 @@
         const grandPercentage = Math.round((grandPresentCount / grandActiveSessions) * 100);
         totalLabel.textContent = grandPercentage + "%";
 
-        // Dynamic color rules for summary metrics
         if (grandPercentage >= 75) {
-            totalLabel.style.color = "#1a7f37"; // Clean Green
+            totalLabel.style.color = "#1a7f37";
         } else if (grandPercentage >= 50) {
-            totalLabel.style.color = "#9a6700"; // Caution Yellow
+            totalLabel.style.color = "#9a6700";
         } else {
-            totalLabel.style.color = "#cf222e"; // Critical Red
+            totalLabel.style.color = "var(--danger-color)";
         }
     }
 
-    function addRow() {
-        const tableBody = document.querySelector('#attendanceTable tbody');
-        const newRow = document.createElement('tr');
-        const today = new Date().toISOString().split('T')[0];
-
-        newRow.innerHTML = `
+    function createRowHTML(dateValue, s1, s2, s3) {
+        const tr = document.createElement('tr');
+        tr.innerHTML = `
+            <td><input type="date" value="${dateValue}" onchange="saveDataToStorage()"></td>
+            <td>
+                <select class="session-status" onchange="updateCalculations(this)">
+                    <option value="Absent" ${s1 === 'Absent' ? 'selected' : ''}>Absent</option>
+                    <option value="Present" ${s1 === 'Present' ? 'selected' : ''}>Present</option>
+                    <option value="Medical Leave" ${s1 === 'Medical Leave' ? 'selected' : ''}>Medical Leave</option>
+                    <option value="Normal Leave" ${s1 === 'Normal Leave' ? 'selected' : ''}>Normal Leave</option>
+                </select>
+            </td>
+            <td>
+                <select class="session-status" onchange="updateCalculations(this)">
+                    <option value="Absent" ${s2 === 'Absent' ? 'selected' : ''}>Absent</option>
+                    <option value="Present" ${s2 === 'Present' ? 'selected' : ''}>Present</option>
+                    <option value="Medical Leave" ${s2 === 'Medical Leave' ? 'selected' : ''}>Medical Leave</option>
+                    <option value="Normal Leave" ${s2 === 'Normal Leave' ? 'selected' : ''}>Normal Leave</option>
+                </select>
+            </td>
+            <td>
+                <select class="session-status" onchange="updateCalculations(this)">
+                    <option value="Absent" ${s3 === 'Absent' ? 'selected' : ''}>Absent</option>
