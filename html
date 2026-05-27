@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Attendance Dashboard</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #333333;
+            --primary-color: #2da44e;
+            --border-color: #d0d7de;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 950px;
+            background: var(--card-bg);
+            padding: 24px;
+            border-radius: 6px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.12), 0 1px 2px rgba(0,0,0,0.24);
+            border: 1px solid var(--border-color);
+        }
+
+        h1 {
+            font-size: 24px;
+            margin-bottom: 4px;
+            text-align: center;
+        }
+
+        p.subtitle {
+            text-align: center;
+            color: #57606a;
+            margin-top: 0;
+            margin-bottom: 20px;
+        }
+
+        /* Summary Dashboard Cards */
+        .summary-dashboard {
+            display: flex;
+            gap: 16px;
+            margin-bottom: 24px;
+            justify-content: center;
+        }
+
+        .summary-card {
+            background: #f6f8fa;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 16px;
+            text-align: center;
+            min-width: 140px;
+            flex: 1;
+            max-width: 200px;
+        }
+
+        .summary-card h3 {
+            margin: 0 0 8px 0;
+            font-size: 13px;
+            color: #57606a;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .summary-card .value {
+            font-size: 28px;
+            font-weight: bold;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 16px;
+        }
+
+        th, td {
+            border: 1px solid var(--border-color);
+            padding: 12px;
+            text-align: center;
+        }
+
+        th {
+            background-color: #f6f8fa;
+            font-weight: 600;
+        }
+
+        .session-header {
+            font-size: 11px;
+            color: #57606a;
+            display: block;
+            font-weight: normal;
+            margin-top: 4px;
+        }
+
+        input[type="date"], select {
+            padding: 8px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            font-family: inherit;
+            background-color: #fff;
+            font-size: 14px;
+            width: 100%;
+            box-sizing: border-box;
+        }
+
+        select {
+            cursor: pointer;
+        }
+
+        .percentage-badge {
+            font-weight: bold;
+            padding: 6px 12px;
+            border-radius: 4px;
+            display: inline-block;
+            min-width: 55px;
+        }
+
+        /* Color Coding Themes */
+        .perfect { background-color: #dafbe1; color: #1a7f37; }
+        .partial { background-color: #fff8c5; color: #9a6700; }
+        .zero { background-color: #ffebe9; color: #cf222e; }
+        .exempt { background-color: #ddf4ff; color: #0969da; }
+
+        .btn {
+            background-color: var(--primary-color);
+            color: white;
+            border: 1px solid rgba(27,31,36,0.15);
+            padding: 8px 16px;
+            font-size: 14px;
+            font-weight: 500;
+            border-radius: 6px;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            margin-top: 16px;
+        }
+
+        .btn:hover {
+            background-color: #2c974b;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h1>📅 Attendance Self-Tracker</h1>
+    <p class="subtitle">Medical Leave (ML) is excluded from total score calculations.</p>
+
+    <!-- Global Statistics Summary View -->
+    <div class="summary-dashboard">
+        <div class="summary-card">
+            <h3>Total Days</h3>
+            <div id="statDays" class="value">1</div>
+        </div>
+        <div class="summary-card">
+            <h3>Attended</h3>
+            <div id="statPresent" class="value" style="color: #1a7f37;">0</div>
+        </div>
+        <div class="summary-card">
+            <h3>Grand Attendance</h3>
+            <div id="statGrandTotal" class="value" style="color: #cf222e;">0%</div>
+        </div>
+    </div>
+
+    <table id="attendanceTable">
+        <thead>
+            <tr>
+                <th style="width: 18%;">Date</th>
+                <th style="width: 23%;">Session 1<span class="session-header">10:00 AM - 11:30 AM</span></th>
+                <th style="width: 23%;">Session 2<span class="session-header">11:45 AM - 01:00 PM</span></th>
+                <th style="width: 23%;">Session 3<span class="session-header">02:00 PM - 04:00 PM</span></th>
+                <th style="width: 13%;">Daily Score</th>
+            </tr>
+        </thead>
+        <tbody>
+            <!-- Initial Row -->
+            <tr>
+                <td><input type="date" value="2026-05-02"></td>
+                <td>
+                    <select class="session-status" onchange="updateCalculations(this)">
+                        <option value="Absent">Absent</option>
+                        <option value="Present">Present</option>
+                        <option value="Medical Leave">Medical Leave</option>
+                        <option value="Normal Leave">Normal Leave</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="session-status" onchange="updateCalculations(this)">
+                        <option value="Absent">Absent</option>
+                        <option value="Present">Present</option>
+                        <option value="Medical Leave">Medical Leave</option>
+                        <option value="Normal Leave">Normal Leave</option>
+                    </select>
+                </td>
+                <td>
+                    <select class="session-status" onchange="updateCalculations(this)">
+                        <option value="Absent">Absent</option>
+                        <option value="Present">Present</option>
+                        <option value="Medical Leave">Medical Leave</option>
+                        <option value="Normal Leave">Normal Leave</option>
+                    </select>
+                </td>
+                <td><span class="percentage-badge zero">0%</span></td>
+            </tr>
+        </tbody>
+    </table>
+
+    <button class="btn" onclick="addRow()">➕ Add New Day</button>
+</div>
+
+<script>
+    // Handles row calculation and updates summary board metrics together
+    function updateCalculations(element) {
+        calculateRow(element.closest('tr'));
+        calculateGrandTotals();
+    }
+
+    function calculateRow(row) {
+        const dropdowns = row.querySelectorAll('.session-status');
+        let totalActiveSessions = 3;
+        let presentCount = 0;
+
+        dropdowns.forEach(dropdown => {
+            if (dropdown.value === "Medical Leave") {
+                totalActiveSessions--;
+            } else if (dropdown.value === "Present") {
+                presentCount++;
+            }
+        });
+
+        const badge = row.querySelector('.percentage-badge');
+        badge.className = 'percentage-badge'; 
+
+        if (totalActiveSessions === 0) {
+            badge.textContent = 'Exempt';
+            badge.classList.add('exempt');
+            return;
+        }
+
+        const percentage = Math.round((presentCount / totalActiveSessions) * 100);
+        badge.textContent = percentage + '%';
+
+        if (percentage === 100) {
+            badge.classList.add('perfect');
+        } else if (percentage >= 75) {
+            badge.classList.add('perfect');
+        } else if (percentage > 0) {
+            badge.classList.add('partial');
+        } else {
+            badge.classList.add('zero');
+        }
+    }
+
+    function calculateGrandTotals() {
+        const allDropdowns = document.querySelectorAll('.session-status');
+        let grandActiveSessions = 0;
+        let grandPresentCount = 0;
+
+        allDropdowns.forEach(dropdown => {
+            if (dropdown.value !== "Medical Leave") {
+                grandActiveSessions++;
+                if (dropdown.value === "Present") {
+                    grandPresentCount++;
+                }
+            }
+        });
+
+        const totalRows = document.querySelectorAll('#attendanceTable tbody tr').length;
+        
+        // Update basic count badges
+        document.getElementById('statDays').textContent = totalRows;
+        document.getElementById('statPresent').textContent = grandPresentCount;
+
+        const totalLabel = document.getElementById('statGrandTotal');
+        
+        if (grandActiveSessions === 0) {
+            totalLabel.textContent = "100%";
+            totalLabel.style.color = "#1a7f37";
+            return;
+        }
+
+        const grandPercentage = Math.round((grandPresentCount / grandActiveSessions) * 100);
+        totalLabel.textContent = grandPercentage + "%";
+
+        // Dynamic color rules for summary metrics
+        if (grandPercentage >= 75) {
+            totalLabel.style.color = "#1a7f37"; // Clean Green
+        } else if (grandPercentage >= 50) {
+            totalLabel.style.color = "#9a6700"; // Caution Yellow
+        } else {
+            totalLabel.style.color = "#cf222e"; // Critical Red
+        }
+    }
+
+    function addRow() {
+        const tableBody = document.querySelector('#attendanceTable tbody');
+        const newRow = document.createElement('tr');
+        const today = new Date().toISOString().split('T')[0];
+
+        newRow.innerHTML = `
